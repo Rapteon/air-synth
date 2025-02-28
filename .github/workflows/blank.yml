@@ -32,4 +32,4 @@ jobs:
 
       - name: Run Clang Format
         run: |
-          find . -name "*.cpp" -o -name "*.h" | xargs clang-format -i
+          find . -name "*.cpp" -o -name "*.h" -exec clang-format -i {} +
