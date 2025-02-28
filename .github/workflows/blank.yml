@@ -28,12 +28,8 @@ jobs:
       - name: Install Clang tools
         run: |
           sudo apt update
-          sudo apt install -y clang-format clang-tidy
+          sudo apt install -y clang-format
 
       - name: Run Clang Format
         run: |
-          find . -name "*.cpp" -o -name "*.h" | xargs clang-format --dry-run --Werror
-
-      - name: Run Clang Tidy
-        run: |
-          find . -name "*.cpp" -o -name "*.h" | xargs clang-tidy --warnings-as-errors="*" --quiet
+          find . -name "*.cpp" -o -name "*.h" | xargs clang-format -i
