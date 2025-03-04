@@ -11,19 +11,21 @@
 #include <mutex>
 #include <atomic>
 #include <csignal>
-#include <gpiod.h>
+#include <gpiod.h>  // LibGPIOD for GPIO handling
 
 #define MPU6050_ADDR 0x68
 #define PWR_MGMT_1 0x6B
 #define ACCEL_CONFIG 0x1C
 #define ACCEL_XOUT_H 0x3B
-
 #define I2C_BUS "/dev/i2c-1"
+
 #define ACCEL_SCALE 16384.0
 #define G 9.81
 #define ACCEL_THRESHOLD 5.0
 #define INCREMENT_VALUE 5
-#define BUTTON_PIN 4 // GPIO pin for the push button
+
+#define GPIO_CHIP "/dev/gpiochip0"
+#define BUTTON_GPIO 4  // Adjust this to match your actual GPIO pin number
 
 using namespace std;
 
@@ -32,12 +34,12 @@ private:
     int file;
     mutex mtx;
     atomic<bool> running;
+    atomic<bool> active;  // Controls whether MPU6050 is reading data
     int counter;
     bool threshold_crossed;
-    atomic<bool> active;
-    
+
 public:
-    MPU6050() : running(true), counter(0), threshold_crossed(false), active(false) {
+    MPU6050() : running(true), active(false), counter(0), threshold_crossed(false) {
         signal(SIGINT, signal_handler);
         if ((file = open(I2C_BUS, O_RDWR)) < 0) {
             cerr << "Failed to open I2C bus" << endl;
@@ -55,17 +57,17 @@ public:
             cerr << "Failed to configure accelerometer" << endl;
         }
     }
-    
+
     ~MPU6050() {
         close(file);
         cout << "I2C file closed. Exiting program." << endl;
     }
-    
+
     static void signal_handler(int signum) {
         cout << "\nTerminating program safely...\n";
         exit(0);
     }
-    
+
     int16_t read_word(uint8_t reg) {
         uint8_t buffer[2];
         if (write(file, &reg, 1) != 1) {
@@ -76,17 +78,18 @@ public:
         }
         return (buffer[0] << 8) | buffer[1];
     }
-    
+
     void monitor_threshold() {
         double last_ax = 0.0;
         while (running) {
             if (!active) {
-                this_thread::sleep_for(chrono::milliseconds(100));
+                this_thread::sleep_for(chrono::milliseconds(100));  // Sleep if button is not pressed
                 continue;
             }
 
             int16_t raw_x = read_word(ACCEL_XOUT_H);
             double ax = (raw_x / ACCEL_SCALE) * G;
+
             {
                 lock_guard<mutex> lock(mtx);
                 if (ax > ACCEL_THRESHOLD && !threshold_crossed) {
@@ -103,48 +106,68 @@ public:
             this_thread::sleep_for(chrono::milliseconds(100));
         }
     }
-    
+
     void start_monitoring() {
         thread monitor_thread(&MPU6050::monitor_threshold, this);
         monitor_thread.detach();
     }
-    
+
     void set_active(bool state) {
         active = state;
     }
 };
 
-void button_interrupt() {
-    gpiod_chip *chip = gpiod_chip_open_by_name("gpiochip0");
+// Function to handle GPIO interrupts
+void button_interrupt(MPU6050& sensor) {
+    struct gpiod_chip* chip = gpiod_chip_open_by_name(GPIO_CHIP);
     if (!chip) {
         cerr << "Failed to open GPIO chip" << endl;
         return;
     }
-    gpiod_line *line = gpiod_chip_get_line(chip, BUTTON_PIN);
+
+    struct gpiod_line* line = gpiod_chip_get_line(chip, BUTTON_GPIO);
     if (!line) {
         cerr << "Failed to get GPIO line" << endl;
         gpiod_chip_close(chip);
         return;
     }
-    if (gpiod_line_request_falling_edge_events(line, "button_listener") < 0) {
-        cerr << "Failed to set line request" << endl;
+
+    if (gpiod_line_request_falling_edge_events(line, "button_monitor") < 0) {
+        cerr << "Failed to request GPIO line for interrupts" << endl;
         gpiod_chip_close(chip);
         return;
     }
-    MPU6050 sensor;
-    sensor.start_monitoring();
+
+    cout << "Waiting for button press..." << endl;
+    
     while (true) {
-        gpiod_line_event event;
-        if (gpiod_line_event_wait(line, NULL) > 0 && gpiod_line_event_read(line, &event) == 0) {
-            cout << "Button pressed. Starting MPU6050 monitoring..." << endl;
-            sensor.set_active(true);
+        struct gpiod_line_event event;
+        int ret = gpiod_line_event_wait(line, nullptr);  // Wait indefinitely for event
+
+        if (ret > 0 && gpiod_line_event_read(line, &event) == 0) {
+            if (event.event_type == GPIOD_LINE_EVENT_FALLING_EDGE) {
+                cout << "Button pressed! Starting MPU6050 data collection..." << endl;
+                sensor.set_active(true);
+            } else {
+                cout << "Button released! Stopping MPU6050 data collection..." << endl;
+                sensor.set_active(false);
+            }
         }
     }
+
     gpiod_chip_close(chip);
 }
 
 int main() {
-    thread button_thread(button_interrupt);
-    button_thread.join();
+    MPU6050 sensor;
+    sensor.start_monitoring();
+
+    thread gpio_thread(button_interrupt, ref(sensor));  // Create a thread for GPIO handling
+    gpio_thread.detach();  // Run GPIO monitoring in the background
+
+    while (true) {
+        this_thread::sleep_for(chrono::milliseconds(1000));  // Keep main thread alive
+    }
+
     return 0;
 }
