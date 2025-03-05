@@ -24,8 +24,8 @@
 #define ACCEL_THRESHOLD 5.0
 #define INCREMENT_VALUE 5
 
-#define GPIO_CHIP "/dev/gpiochip0"
-#define BUTTON_GPIO 4  // Adjust this to match your actual GPIO pin number
+#define GPIO_CHIP "gpiochip0"
+#define BUTTON_GPIO 4  // GPIO Pin for button (connected to GND)
 
 using namespace std;
 
@@ -117,38 +117,51 @@ public:
     }
 };
 
-// Function to handle GPIO interrupts
+// Function to handle GPIO interrupts (Button connected to GND)
 void button_interrupt(MPU6050& sensor) {
     struct gpiod_chip* chip = gpiod_chip_open_by_name(GPIO_CHIP);
     if (!chip) {
-        cerr << "Failed to open GPIO chip" << endl;
+        cerr << "Error: Failed to open GPIO chip. Check permissions or hardware connection." << endl;
         return;
     }
 
     struct gpiod_line* line = gpiod_chip_get_line(chip, BUTTON_GPIO);
     if (!line) {
-        cerr << "Failed to get GPIO line" << endl;
+        cerr << "Error: Failed to get GPIO line." << endl;
         gpiod_chip_close(chip);
         return;
     }
 
-    if (gpiod_line_request_falling_edge_events(line, "button_monitor") < 0) {
-        cerr << "Failed to request GPIO line for interrupts" << endl;
+    // Configure GPIO as input with an internal pull-up resistor
+    struct gpiod_line_request_config config = {};
+    config.consumer = "button_monitor";
+    config.request_type = GPIOD_LINE_REQUEST_EVENT_FALLING_EDGE;
+    config.flags = GPIOD_LINE_REQUEST_FLAG_BIAS_PULL_UP; // Enable internal pull-up
+
+    if (gpiod_line_request(line, &config, 0) < 0) {  // Third argument (0) sets initial GPIO state
+        cerr << "Error: Failed to configure GPIO with pull-up resistor." << endl;
         gpiod_chip_close(chip);
         return;
     }
-
-    cout << "Waiting for button press..." << endl;
     
+    
+    
+    cout << "Waiting for button press..." << endl;
+
     while (true) {
         struct gpiod_line_event event;
-        int ret = gpiod_line_event_wait(line, nullptr);  // Wait indefinitely for event
+        int ret = gpiod_line_event_wait(line, nullptr);  // Wait indefinitely for button press
 
         if (ret > 0 && gpiod_line_event_read(line, &event) == 0) {
             if (event.event_type == GPIOD_LINE_EVENT_FALLING_EDGE) {
                 cout << "Button pressed! Starting MPU6050 data collection..." << endl;
                 sensor.set_active(true);
-            } else {
+
+                // Wait until button is released
+                while (gpiod_line_get_value(line) == 0) {
+                    this_thread::sleep_for(chrono::milliseconds(50));  // Debounce delay
+                }
+
                 cout << "Button released! Stopping MPU6050 data collection..." << endl;
                 sensor.set_active(false);
             }
