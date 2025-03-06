@@ -16,44 +16,45 @@
 #define MPU6050_ADDR 0x68 // 0x72 other address.
 #define PWR_MGMT_1 0x6B
 #define ACCEL_CONFIG 0x1C
-#define ACCEL_XOUT_H 0x3B
+#define ACCEL_XOUT_H 0x3B   //Obtained from Datasheet
+#define ACCEL_YOUT_H 0x3D
+#define ACCEL_ZOUT_H 0x3F
 
 #define I2C_BUS "/dev/i2c-1" // Specify the I2C bus
 #define ACCEL_SCALE 16384.0   // Scale factor for ±2g range
 #define G 9.81                // Gravity in m/s²
 #define ACCEL_THRESHOLD_POS 5.0   // Acceleration threshold in m/s²
-#define ACCEL_THRESHOLE_NEG -5.0 //Negative acceleration threshole in m/s2
+#define ACCEL_THRESHOLD_NEG -5.0 //Negative acceleration threshold in m/s2
 #define INCREMENT_VALUE 5     // Value to increment when threshold is crossed
 #define DECREMENT_VALUE 5     // Value to decrement when threshold is crossed
 
 #define GPIO_CHIP "gpiochip0"
 #define BUTTON_GPIO 4
 
-
 using namespace std;
 
 class MPU6050 {
-    private:
+private:
     int file;
     std::mutex mtx;
     std::atomic<bool> running;
-    std::atomic<bool> active; //Indicates if MPU6050 is reading data or not
-    int counter;
-    bool threshold_crossed;
+    std::atomic<bool> active; // Indicates if MPU6050 is reading data or not
+    int counter_x, counter_y;
+    bool threshold_crossed_x, threshold_crossed_y;
 
-    public:
-    MPU6050() : running(true), active(false), counter(0), threshold_crossed(false) {
+public:
+    MPU6050() : running(true), active(false), counter_x(0), counter_y(0), threshold_crossed_x(false), threshold_crossed_y(false) {
         signal(SIGINT, signal_handler);
-        if((file = open(I2C_BUS,O_RDWR))<0){
-            std::cerr << "Failed to open I2C bus"<<std::endl;
+        if ((file = open(I2C_BUS, O_RDWR)) < 0) {
+            std::cerr << "Failed to open I2C bus" << std::endl;
         }
 
-        if(ioctl(file,I2C_SLAVE,MPU6050_ADDR) < 0) {
+        if (ioctl(file, I2C_SLAVE, MPU6050_ADDR) < 0) {
             std::cerr << "Failed to initialise MPU6050" << std::endl;
         }
 
         uint8_t config[2] = {PWR_MGMT_1, 0x00};
-        if(write(file, config, 2) != 2) {
+        if (write(file, config, 2) != 2) {
             std::cerr << "Failed to initialise MPU6050" << std::endl;
         }
     }
@@ -63,14 +64,14 @@ class MPU6050 {
         std::cout << "I2C Closed. Exiting Program." << std::endl;
     }
 
-    static void signal_handler(int signum){
-        std::cout <<"\nTerminating Program Safely...\n";
+    static void signal_handler(int signum) {
+        std::cout << "\nTerminating Program Safely...\n";
         exit(0);
     }
 
     int16_t read_word(int8_t reg) {
         uint8_t buffer[2];
-        if(write(file, &reg, 1) != 1) {
+        if (write(file, &reg, 1) != 1) {
             std::cerr << "Failed to write register address" << std::endl;
         }
 
@@ -81,30 +82,47 @@ class MPU6050 {
     }
 
     void monitor_threshold() {
-        double last_ax = 0.0;
-        while(running) {
+        double last_ax = 0.0, last_ay = 0.0;
+        while (running) {
             if (!active) {
-                this_thread::sleep_for(chrono::milliseconds(100)); //sleep if button is not pressed
+                this_thread::sleep_for(chrono::milliseconds(100)); // Sleep if button is not pressed
                 continue;
             }
 
             int16_t raw_x = read_word(ACCEL_XOUT_H);
+            int16_t raw_y = read_word(ACCEL_YOUT_H);
             double ax = (raw_x / ACCEL_SCALE) * G;
+            double ay = (raw_y / ACCEL_SCALE) * G;
 
             {
                 lock_guard<std::mutex> lock(mtx);
-                if(ax > ACCEL_THRESHOLD_POS && !threshold_crossed){
-                    counter += INCREMENT_VALUE;
-                    threshold_crossed = true;
-                } else if((ax < ACCEL_THRESHOLD_POS) && (ax > ACCEL_THRESHOLE_NEG)) {
-                    threshold_crossed = false;
-                } else if(ax < ACCEL_THRESHOLE_NEG && !threshold_crossed){
-                    counter -= INCREMENT_VALUE;
-                    threshold_crossed = true;
+                // X-axis acceleration processing
+                if (ax > ACCEL_THRESHOLD_POS && !threshold_crossed_x) {
+                    counter_x += INCREMENT_VALUE;
+                    threshold_crossed_x = true;
+                } else if ((ax < ACCEL_THRESHOLD_POS) && (ax > ACCEL_THRESHOLD_NEG)) {
+                    threshold_crossed_x = false;
+                } else if (ax < ACCEL_THRESHOLD_NEG && !threshold_crossed_x) {
+                    counter_x -= INCREMENT_VALUE;
+                    threshold_crossed_x = true;
                 }
-                if (fabs(ax - last_ax) > 0.1) {
-                    std::cout << "Acceleration: " << ax << "m/s2 | Counter " << counter << std::endl;
+
+                // Y-axis acceleration processing
+                if (ay > ACCEL_THRESHOLD_POS && !threshold_crossed_y) {
+                    counter_y += INCREMENT_VALUE;
+                    threshold_crossed_y = true;
+                } else if ((ay < ACCEL_THRESHOLD_POS) && (ay > ACCEL_THRESHOLD_NEG)) {
+                    threshold_crossed_y = false;
+                } else if (ay < ACCEL_THRESHOLD_NEG && !threshold_crossed_y) {
+                    counter_y -= INCREMENT_VALUE;
+                    threshold_crossed_y = true;
+                }
+
+                if (fabs(ax - last_ax) > 0.1 || fabs(ay - last_ay) > 0.1) {
+                    std::cout << "Acceleration X: " << ax << " m/s2 | Counter X: " << counter_x 
+                              << " | Acceleration Y: " << ay << " m/s2 | Counter Y: " << counter_y << std::endl;
                     last_ax = ax;
+                    last_ay = ay;
                 }
             }
             this_thread::sleep_for(chrono::milliseconds(100));
@@ -136,20 +154,17 @@ void button_interrupt(MPU6050& sensor) {
         return;
     }
 
-    // Configure GPIO as input with an internal pull-up resistor
     struct gpiod_line_request_config config = {};
     config.consumer = "button_monitor";
     config.request_type = GPIOD_LINE_REQUEST_EVENT_FALLING_EDGE;
-    config.flags = GPIOD_LINE_REQUEST_FLAG_BIAS_PULL_UP; // Enable internal pull-up
+    config.flags = GPIOD_LINE_REQUEST_FLAG_BIAS_PULL_UP;
 
-    if (gpiod_line_request(line, &config, 0) < 0) {  // Third argument (0) sets initial GPIO state
+    if (gpiod_line_request(line, &config, 0) < 0) {
         cerr << "Error: Failed to configure GPIO with pull-up resistor." << endl;
         gpiod_chip_close(chip);
         return;
     }
-    
-    
-    
+
     cout << "Waiting for button press..." << endl;
 
     while (true) {
@@ -179,12 +194,11 @@ int main() {
     MPU6050 sensor;
     sensor.start_monitoring();
 
-    thread gpio_thread(button_interrupt, ref(sensor));  // Create a thread for GPIO handling
-    gpio_thread.detach();  // Run GPIO monitoring in the background
+    thread gpio_thread(button_interrupt, ref(sensor));
+    gpio_thread.detach();
 
     while (true) {
-        this_thread::sleep_for(chrono::milliseconds(1000));  // Keep main thread alive
+        this_thread::sleep_for(chrono::milliseconds(1000));
     }
-
     return 0;
 }
