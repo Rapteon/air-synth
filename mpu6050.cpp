@@ -11,79 +11,80 @@
 #include <mutex>
 #include <atomic>
 #include <csignal>
-#include <gpiod.h>  // LibGPIOD for GPIO handling
+#include <gpiod.h>
 
-#define MPU6050_ADDR 0x68
+#define MPU6050_ADDR 0x68 // 0x72 other address.
 #define PWR_MGMT_1 0x6B
 #define ACCEL_CONFIG 0x1C
 #define ACCEL_XOUT_H 0x3B
-#define I2C_BUS "/dev/i2c-1"
 
-#define ACCEL_SCALE 16384.0
-#define G 9.81
-#define ACCEL_THRESHOLD 5.0
-#define INCREMENT_VALUE 5
+#define I2C_BUS "/dev/i2c-1" // Specify the I2C bus
+#define ACCEL_SCALE 16384.0   // Scale factor for ±2g range
+#define G 9.81                // Gravity in m/s²
+#define ACCEL_THRESHOLD_POS 5.0   // Acceleration threshold in m/s²
+#define ACCEL_THRESHOLE_NEG -5.0 //Negative acceleration threshole in m/s2
+#define INCREMENT_VALUE 5     // Value to increment when threshold is crossed
+#define DECREMENT_VALUE 5     // Value to decrement when threshold is crossed
 
 #define GPIO_CHIP "gpiochip0"
-#define BUTTON_GPIO 4  // GPIO Pin for button (connected to GND)
+#define BUTTON_GPIO 4
+
 
 using namespace std;
 
 class MPU6050 {
-private:
+    private:
     int file;
-    mutex mtx;
-    atomic<bool> running;
-    atomic<bool> active;  // Controls whether MPU6050 is reading data
+    std::mutex mtx;
+    std::atomic<bool> running;
+    std::atomic<bool> active; //Indicates if MPU6050 is reading data or not
     int counter;
     bool threshold_crossed;
 
-public:
+    public:
     MPU6050() : running(true), active(false), counter(0), threshold_crossed(false) {
         signal(SIGINT, signal_handler);
-        if ((file = open(I2C_BUS, O_RDWR)) < 0) {
-            cerr << "Failed to open I2C bus" << endl;
+        if((file = open(I2C_BUS,O_RDWR))<0){
+            std::cerr << "Failed to open I2C bus"<<std::endl;
         }
-        if (ioctl(file, I2C_SLAVE, MPU6050_ADDR) < 0) {
-            cerr << "Failed to acquire bus access" << endl;
+
+        if(ioctl(file,I2C_SLAVE,MPU6050_ADDR) < 0) {
+            std::cerr << "Failed to initialise MPU6050" << std::endl;
         }
+
         uint8_t config[2] = {PWR_MGMT_1, 0x00};
-        if (write(file, config, 2) != 2) {
-            cerr << "Failed to initialize MPU6050" << endl;
-        }
-        config[0] = ACCEL_CONFIG;
-        config[1] = 0x00;
-        if (write(file, config, 2) != 2) {
-            cerr << "Failed to configure accelerometer" << endl;
+        if(write(file, config, 2) != 2) {
+            std::cerr << "Failed to initialise MPU6050" << std::endl;
         }
     }
 
     ~MPU6050() {
         close(file);
-        cout << "I2C file closed. Exiting program." << endl;
+        std::cout << "I2C Closed. Exiting Program." << std::endl;
     }
 
-    static void signal_handler(int signum) {
-        cout << "\nTerminating program safely...\n";
+    static void signal_handler(int signum){
+        std::cout <<"\nTerminating Program Safely...\n";
         exit(0);
     }
 
-    int16_t read_word(uint8_t reg) {
+    int16_t read_word(int8_t reg) {
         uint8_t buffer[2];
-        if (write(file, &reg, 1) != 1) {
-            cerr << "Failed to write register address" << endl;
+        if(write(file, &reg, 1) != 1) {
+            std::cerr << "Failed to write register address" << std::endl;
         }
+
         if (read(file, buffer, 2) != 2) {
-            cerr << "Failed to read data" << endl;
+            std::cerr << "Failed to read data" << endl;
         }
         return (buffer[0] << 8) | buffer[1];
     }
 
     void monitor_threshold() {
         double last_ax = 0.0;
-        while (running) {
+        while(running) {
             if (!active) {
-                this_thread::sleep_for(chrono::milliseconds(100));  // Sleep if button is not pressed
+                this_thread::sleep_for(chrono::milliseconds(100)); //sleep if button is not pressed
                 continue;
             }
 
@@ -91,15 +92,18 @@ public:
             double ax = (raw_x / ACCEL_SCALE) * G;
 
             {
-                lock_guard<mutex> lock(mtx);
-                if (ax > ACCEL_THRESHOLD && !threshold_crossed) {
+                lock_guard<std::mutex> lock(mtx);
+                if(ax > ACCEL_THRESHOLD_POS && !threshold_crossed){
                     counter += INCREMENT_VALUE;
                     threshold_crossed = true;
-                } else if (ax < ACCEL_THRESHOLD) {
+                } else if((ax < ACCEL_THRESHOLD_POS) && (ax > ACCEL_THRESHOLE_NEG)) {
                     threshold_crossed = false;
+                } else if(ax < ACCEL_THRESHOLE_NEG && !threshold_crossed){
+                    counter -= INCREMENT_VALUE;
+                    threshold_crossed = true;
                 }
                 if (fabs(ax - last_ax) > 0.1) {
-                    cout << "Acceleration: " << ax << " m/s² | Counter: " << counter << endl;
+                    std::cout << "Acceleration: " << ax << "m/s2 | Counter " << counter << std::endl;
                     last_ax = ax;
                 }
             }
