@@ -21,5 +21,6 @@ enable_testing()
 set(CMAKE_CXX_STANDARD 17)
 
 add_executable(AirSynth src/mpu6050.cpp)
+include_directories(AirSynth include)
 
 target_link_libraries(AirSynth gpiod)
