@@ -2,11 +2,6 @@
 
 Gesture-based music synthesizer.
 
-## Prerequisites
-1. git
-2. cmake (v3.25 or above)
-3. *add libraries for project here*
-
 ## Build instructions
 1. Clone the repository and navigate to it in a terminal.
 2. Ensure you are in the `air-synth` directory and then run: `cmake -G "Unix Makefiles" -B build`  
@@ -16,3 +11,5 @@ in the **build** folder. If you want to use the default generator, run the comma
     ```
     cmake --build ./build --config Release --target AirSynth
     ```
+
+For more information, see [the Wiki](https://github.com/Rapteon/air-synth/wiki)
