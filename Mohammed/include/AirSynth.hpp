@@ -1,8 +1,8 @@
 /**
  * @file AirSynth.hpp
  * @brief Main interface for the Air Synth application
- * @author Your Name
- * @date March 14, 2025
+ * @author Mohammed
+ * @date Feb 25, 2025
  */
 
 #ifndef AIR_SYNTH_HPP
