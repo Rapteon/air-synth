@@ -20,7 +20,18 @@ enable_testing()
 # Use C++17
 set(CMAKE_CXX_STANDARD 17)
 
-add_executable(AirSynth src/mpu6050.cpp)
-include_directories(AirSynth include)
+add_library(Button STATIC src/Button/Button.cpp)
+target_include_directories(Button PRIVATE include/Button)
 
+
+add_executable(AirSynth src/main.cpp)
+add_library(IMU STATIC src/IMU/MPU6050.cpp)
+target_include_directories(IMU PRIVATE include/IMU)
+target_link_libraries(IMU gpiod)
+target_link_libraries(IMU Button)
+
+include_directories(AirSynth include)
 target_link_libraries(AirSynth gpiod)
+target_link_libraries(AirSynth IMU)
+target_link_libraries(AirSynth Button)
+
