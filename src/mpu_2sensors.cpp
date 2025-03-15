@@ -13,8 +13,7 @@
 #include <csignal>
 #include <gpiod.h>
 
-#define MPU6050_ADDR1 0x68
-#define MPU6050_ADDR2 0x69
+
 #define PWR_MGMT_1 0x6B
 #define ACCEL_XOUT_H 0x3B
 #define ACCEL_YOUT_H 0x3D
@@ -31,21 +30,10 @@
 #define DECREMENT_VALUE 5
 
 #define GPIO_CHIP "gpiochip0"
-#define BUTTON_GPIO1 20
-#define BUTTON_GPIO2 21
 
 using namespace std;
 
 class MPU6050 {
-private:
-    int file;
-    int address;
-    std::mutex mtx;
-    std::atomic<bool> running;
-    std::atomic<bool> active;
-    int counter_x, counter_y, counter_z;
-    bool threshold_crossed_x, threshold_crossed_y, threshold_crossed_z;
-    double z_offset;
 
 public:
     MPU6050(int addr) : address(addr), running(true), active(false), counter_x(0), counter_y(0), counter_z(0), 
@@ -142,18 +130,4 @@ void button_interrupt(MPU6050& sensor, int button_gpio) {
         }
     }
     gpiod_chip_close(chip);
-}
-
-int main() {
-    MPU6050 sensor1(MPU6050_ADDR1), sensor2(MPU6050_ADDR2);
-    sensor1.calibrate_z_axis();
-    sensor2.calibrate_z_axis();
-    sensor1.start_monitoring();
-    sensor2.start_monitoring();
-
-    thread(button_interrupt, ref(sensor1), BUTTON_GPIO1).detach();
-    thread(button_interrupt, ref(sensor2), BUTTON_GPIO2).detach();
-
-    while (true) this_thread::sleep_for(chrono::milliseconds(1000));
-    return 0;
 }

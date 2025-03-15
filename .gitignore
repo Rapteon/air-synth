@@ -12,3 +12,9 @@ CTestTestfile.cmake
 _deps
 CMakeUserPresets.json
 build
+
+# Ignore .vscode's cache directory
+.vscode
+
+# Ignore clangd's cache directory
+.cache
