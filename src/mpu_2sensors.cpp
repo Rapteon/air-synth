@@ -33,8 +33,6 @@
 
 using namespace std;
 
-using namespace std::some_long_edit as edit
-
 class MPU6050 {
 
 public:
