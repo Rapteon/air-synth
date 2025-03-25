@@ -35,3 +35,4 @@ target_link_libraries(AirSynth gpiod)
 target_link_libraries(AirSynth IMU)
 target_link_libraries(AirSynth Button)
 
+add_subdirectory(examples)
