@@ -23,6 +23,8 @@ set(CMAKE_CXX_STANDARD 17)
 add_library(Button STATIC src/Button/Button.cpp)
 target_include_directories(Button PRIVATE include/Button)
 
+add_library(Synth STATIC src/Synth/Synth.cpp)
+target_include_directories(Synth PRIVATE include/Synth)
 
 add_executable(AirSynth src/main.cpp)
 add_library(IMU STATIC src/IMU/MPU6050.cpp)
@@ -34,4 +36,4 @@ include_directories(AirSynth include)
 target_link_libraries(AirSynth gpiod)
 target_link_libraries(AirSynth IMU)
 target_link_libraries(AirSynth Button)
-
+target_link_libraries(AirSynth Synth)
