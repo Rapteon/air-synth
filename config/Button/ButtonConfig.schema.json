@@ -1,0 +1,27 @@
+{
+    "$schema": "http://json-schema.org/draft-07/schema#",
+    "$id": "https://example.com/schemas/Button/ButtonConfig.schema.json",
+    "title": "Button Configuration Schema",
+    "description": "This schema defines the configuration for the Button. It includes properties for the .",
+    "type": "object",
+    "properties": {
+        "chip-name": {
+            "type": "string",
+            "description": "The name of the chip used for the button. For example 'gpiochip0'.",
+            "default": "gpiochip0"
+        },
+        "gpio": {
+            "type": "object",
+            "properties": {
+                "line-offset": {
+                    "type": "integer",
+                    "description": "The offset for the GPIO line. Default is 20. Use separate offset for each button to avoid conflicts.",
+                    "default": 20
+                }
+            },
+            "required": [
+                "number"
+            ]
+        }
+    }
+}

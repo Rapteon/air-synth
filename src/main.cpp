@@ -1,9 +1,6 @@
 #include "IMU/MPU6050.h"
-#include "Button/Button.h"
-#include <thread>
-
-#define BUTTON_GPIO1 20
-#define BUTTON_GPIO2 21
+#include "Config.h"
+#include "ConfigReader/MPUConfigReader.h"
 
 int main()
 {
@@ -13,7 +10,12 @@ int main()
     constexpr int MPU6050_ADDR1{0x68};
     constexpr int MPU6050_ADDR2{0x69};
 
+    MPUConfigReader leftConfig {LEFT_MPU_CONFIG_FILEPATH, MPU_SCHEMA_CONFIG_FILEPATH};
+    MPUConfigReader rightConfig {RIGHT_MPU_CONFIG_FILEPATH, MPU_SCHEMA_CONFIG_FILEPATH};
+
     MPU6050 leftSensor{MPU6050_ADDR1};
+    leftConfig.configure(leftSensor);
+
     Button leftButton{};
     leftButton.registerCallback(&leftSensor);
     leftSensor.start();
@@ -25,11 +27,6 @@ int main()
     rightSensor.start();
     rightButton.start(GPIO_CHIP, RIGHT_BTN_OFFSET);
 
-    // TODO: Should be replaced with callback registration code.
-    // std::thread t1 (leftSensor.button_interrupt, ref(leftSensor), BUTTON_GPIO1).detach();
-    // std::thread t2 (rightSensor.button_interrupt, ref(rightSensor), BUTTON_GPIO2).detach();
-
-    // while (true) std::this_thread::sleep_for(std::chrono::milliseconds(1000));
     fprintf(stdout, "Press any key to stop\n");
     getchar();
     leftButton.stop();

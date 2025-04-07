@@ -1,0 +1,71 @@
+{
+    "$schema": "http://json-schema.org/draft-07/schema#",
+    "$id": "https://example.com/schemas/IMU/IMUConfig.schema.json",
+    "title": "IMU Configuration Schema",
+    "description": "This schema defines the configuration for the IMU sensor. It includes properties for the interface type, I2C address, power management settings, and accelerometer settings.",
+    "type": "object",
+    "properties": {
+        "interface": {
+            "type": "string",
+            "description": "The type of interface used to communicate with the sensor. Can be 'i2c' or 'spi'.",
+            "default": "i2c"
+        },
+        "address": {
+            "type": "integer",
+            "description": "The I2C address of the sensor. Default is 104 (in decimal). Only accepts decimal value."
+        },
+        "power-management": {
+            "type": "object",
+            "properties": {
+                "mode": {
+                    "type": "string",
+                    "description": "The power mode of the sensor. Can be 'sleep', 'cycle', or 'reset'."
+                },
+                "cycle-frequency": {
+                    "type": "number",
+                    "description": "The frequency of the cycle mode in Hz. Can be set if mode is 'cycle'. Allowed values are 1.25, 5, 20, and 40. Default is 40.",
+                    "default": 40
+                }
+            },
+            "required": [
+                "mode"
+            ]
+        },
+        "accel": {
+            "type": "object",
+            "properties": {
+                "range": {
+                    "type": "string",
+                    "description": "The range of the accelerometer. Can be '2g', '4g', '8g', or '16g'.",
+                    "default": "2g"
+                },
+                "scaling": {
+                    "type": "number",
+                    "description": "The scaling factor for the accelerometer. Default is 1.0",
+                    "default": 1.0
+                },
+                "z": {
+                    "type":"object",
+                    "properties": {
+                        "samples": {
+                            "type": "integer",
+                            "description": "Number of samples to use for calibration. Set to 0 to disable callibration.",
+                            "default": 100
+                        }
+                    }
+                },
+                "gravity": {
+                    "type": "number",
+                    "description": "The gravity constant to use for the accelerometer. Default is 9.81 m/s^2.",
+                    "default": 9.81
+                }
+            }
+        }
+    },
+    "required": [
+        "interface",
+        "address",
+        "power-management",
+        "accel"
+    ]
+}

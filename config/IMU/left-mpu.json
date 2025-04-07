@@ -1,0 +1,16 @@
+{
+    "config": {
+        "interface": "i2c",
+        "address": 104,
+        "power-management": {
+            "mode": "reset"
+        },
+        "accel": {
+            "range": "2g",
+            "scaling": 16384.0,
+            "z": {
+                "samples": 100
+            }
+        }
+    }
+}

@@ -1,5 +1,4 @@
 #include "IMU/MPU6050.h"
-#include "Button/Button.h"
 
 #include <fcntl.h>
 #include <sys/ioctl.h>
@@ -7,7 +6,6 @@
 #include <csignal>
 #include <gpiod.h>
 
-// using namespace std;
 
 MPU6050::~MPU6050()
 {
@@ -98,7 +96,7 @@ void MPU6050::worker()
 
             std::cerr << "[MPU " << address << "] Counter_X = " << counter_x << " || Counter_Y = " << counter_y << " || Counter_Z = " << counter_z << std::endl;
         }
-        // this_thread::sleep_for(chrono::milliseconds(100));
+        std::this_thread::sleep_for(std::chrono::milliseconds(100));
     }
 }
 
@@ -106,27 +104,3 @@ void MPU6050::start()
 {
     std::thread(&MPU6050::worker, this).detach();
 }
-
-// TODO replace content of this method within hasEvent() inherited method.
-// void MPU6050::button_interrupt(MPU6050 &sensor, int button_gpio)
-// {
-//     struct gpiod_chip *chip = gpiod_chip_open_by_name(GPIO_CHIP);
-//     struct gpiod_line *line = gpiod_chip_get_line(chip, button_gpio);
-//     struct gpiod_line_request_config config = {"button_monitor", GPIOD_LINE_REQUEST_EVENT_FALLING_EDGE, GPIOD_LINE_REQUEST_FLAG_BIAS_PULL_UP};
-//     gpiod_line_request(line, &config, 0);
-//     while (true)
-//     {
-//         struct gpiod_line_event event;
-//         if (gpiod_line_event_wait(line, nullptr) > 0 && gpiod_line_event_read(line, &event) == 0)
-//         {
-//             if (event.event_type == GPIOD_LINE_EVENT_FALLING_EDGE)
-//             {
-//                 sensor.set_active(true);
-//                 while (gpiod_line_get_value(line) == 0)
-//                     this_thread::sleep_for(chrono::milliseconds(50));
-//                 sensor.set_active(false);
-//             }
-//         }
-//     }
-//     gpiod_chip_close(chip);
-// }
