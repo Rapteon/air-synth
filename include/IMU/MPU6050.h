@@ -63,6 +63,8 @@ public:
     void worker();
 
     void start();
+    
+    int16_t read_word(int8_t reg);
 
     // TODO replace content of this method within hasEvent() inherited method.
     // void button_interrupt(MPU6050 &sensor, int button_gpio);
@@ -78,7 +80,6 @@ private:
     double z_offset;
 
     void calibrate_z_axis();
-    int16_t read_word(int8_t reg);
 };
 
 #endif
