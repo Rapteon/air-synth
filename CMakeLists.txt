@@ -36,6 +36,8 @@ add_library(MPUSchemaConfigReader src/ConfigReader/MPUSchemaConfigReader.cpp)
 target_include_directories(MPUSchemaConfigReader PRIVATE include/ConfigReader)
 target_link_libraries(MPUSchemaConfigReader ConfigReader)
 
+add_library(I2CBus src/Bus/I2CBus.cpp)
+target_include_directories(I2CBus PRIVATE include/I2CBus)
 
 add_library(MPUConfigReader src/ConfigReader/MPUConfigReader.cpp)
 target_include_directories(MPUConfigReader PRIVATE include/ConfigReader)
@@ -54,6 +56,7 @@ target_link_libraries(AirSynth IMU)
 target_link_libraries(AirSynth Button)
 target_link_libraries(AirSynth nlohmann_json::nlohmann_json)
 target_link_libraries(AirSynth MPUConfigReader)
+target_link_libraries(AirSynth I2CBus)
 
 # Set the path to the JSON configuration files.
 set(LEFT_MPU_CONFIG_FILEPATH "${CMAKE_SOURCE_DIR}/config/IMU/left-mpu.json")

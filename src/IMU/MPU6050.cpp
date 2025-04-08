@@ -12,27 +12,41 @@ MPU6050::~MPU6050()
     close(file);
     std::cerr << "I2C Closed for address " << address << "\n";
 }
-
+// TODO: Pass I2CBus as a reference to the constructor. The Bus should be a member
+// within this class which must be used to configure this class with the MPUConfigReader's
+// configure method. So the actual calls to the Bus's methods should be done
+// within the configure method of the MPUConfigReader class.
 MPU6050::MPU6050(int addr) : address(addr), running(true), active(false), counter_x(0), counter_y(0), counter_z(0),
-                             threshold_crossed_x(false), threshold_crossed_y(false), threshold_crossed_z(false)
+                             threshold_crossed_x(false), threshold_crossed_y(false), threshold_crossed_z(false), bus(nullptr)
 {
+    // This 'if' can be removed, because this is done in the I2CBus constructor.
     if ((file = open(I2C_BUS, O_RDWR)) < 0)
     {
         std::cerr << "Failed to open I2C bus" << std::endl;
     }
+    
+    // This is in a method which can be called by MPUConfigReader's configure method.
     if (ioctl(file, I2C_SLAVE, address) < 0)
     {
         std::cerr << "Failed to initialize MPU6050 at address " << address << std::endl;
     }
+    // Same as above if for this one.
     uint8_t config[2] = {PWR_MGMT_1, 0x00};
     if (write(file, config, 2) != 2)
     {
         std::cerr << "Failed to initialize MPU6050 at address " << address << std::endl;
     }
-
+    bus = nullptr;
     calibrate_z_axis();
 }
 
+MPU6050::MPU6050(I2CBus &bus): bus(bus) {
+    calibrate_z_axis();
+}
+
+// Should be a private method, and public facing methods should internally
+// decide what register to write. The public facing API should not expose
+// registers.
 int16_t MPU6050::read_word(int8_t reg)
 {
     uint8_t buffer[2];
@@ -65,6 +79,9 @@ void MPU6050::worker()
             std::this_thread::sleep_for(std::chrono::milliseconds(100));
             continue;
         }
+        // Convert these ACCEL_XOUT_H, ACCEL_YOUT_H, and ACCEL_ZOUT_H to
+        // variables within this class, and set them in the configure method
+        // of the MPUConfigReader class.
         int16_t raw_x = read_word(ACCEL_XOUT_H);
         int16_t raw_y = read_word(ACCEL_YOUT_H);
         int16_t raw_z = read_word(ACCEL_ZOUT_H);
@@ -103,4 +120,17 @@ void MPU6050::worker()
 void MPU6050::start()
 {
     std::thread(&MPU6050::worker, this).detach();
+}
+
+
+I2CBus MPU6050::getBus() {
+    return bus;
+}
+
+void MPU6050::setAddress(int address) {
+    this->address = address;
+}
+
+int MPU6050::getAddress() {
+    return address;
 }

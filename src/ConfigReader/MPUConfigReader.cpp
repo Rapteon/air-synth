@@ -1,4 +1,5 @@
 #include "ConfigReader/MPUConfigReader.h"
+#include "Bus/I2CBus.h"
 #include "IMU/MPU6050.h"
 #include <list>
 #include <sstream>
@@ -7,12 +8,12 @@
 MPUConfigReader::MPUConfigReader(const char *file_path,
                                  const char *schema_file_path)
     : ConfigReader(file_path), schema_reader(schema_file_path) {
-      isValidConfig();
-    }
+  isValidConfig();
+}
 
-void MPUConfigReader::configure(const MPU6050 &mpu) {
+void MPUConfigReader::configure(MPU6050 &mpu) {
   /**
-  1. Register MPU to Bus by reading address from JSON file.
+1. Register MPU to Bus by reading address from JSON file.
   2. Configure power management settings
   3. Set callibration samples variable.
   4. Set ACCEL_SCALE variable
@@ -23,6 +24,8 @@ void MPUConfigReader::configure(const MPU6050 &mpu) {
   7. Set INCREMENT_VALUE variable
    */
   auto config = getConfig();
+  configureAddress(config["address"], mpu);
+  configurePowerManagement(config["power-management"], mpu);
 }
 
 void MPUConfigReader::throwMissingKeyError(const std::string &key) {
@@ -117,3 +120,32 @@ MPUConfigReader::setToString(const std::unordered_set<std::string> &set) {
 }
 
 json MPUConfigReader::getConfig() { return data["config"]; }
+
+void MPUConfigReader::configureAddress(const json &address, MPU6050 &mpu) {
+  mpu.setAddress(address);
+  I2CBus bus{mpu.getBus()};
+  bus.register_slave(address);
+  std::cerr << "Address configured." << '\n';
+}
+
+void MPUConfigReader::configurePowerManagement(const json &power_management,
+                                               MPU6050 &mpu) {
+  uint8_t PWR_MGMT_REG_VALUE{};
+  if (power_management == "reset") {
+    PWR_MGMT_REG_VALUE = 0;
+  } else if (power_management == "sleep") {
+    // TODO: implement
+  } else if (power_management == "cycle") {
+    // TODO: implement
+  } else {
+    throw std::runtime_error(
+        "Invalid power-management value when configuring.");
+  }
+  const uint8_t PWR_MGMT_REG_ADDR{107};
+  constexpr size_t BUFFER_SIZE{2};
+  uint8_t config_buffer[BUFFER_SIZE] = {PWR_MGMT_REG_ADDR, PWR_MGMT_REG_VALUE};
+  I2CBus bus{mpu.getBus()};
+  int address = mpu.getAddress();
+  bus.sendData(address, config_buffer, BUFFER_SIZE);
+  std::cerr << "Power management configured." << '\n';
+}

@@ -1,6 +1,7 @@
 #ifndef MPU6050_H
 #define MPU6050_H
 
+#include "Bus/I2CBus.h"
 #include "IMU/MPU6050.h"
 #include "Button/Button.h"
 
@@ -55,6 +56,7 @@ public:
         }
     }
     MPU6050(int addr);
+    MPU6050(I2CBus &bus);
 
     ~MPU6050();
 
@@ -66,10 +68,13 @@ public:
 
     // TODO replace content of this method within hasEvent() inherited method.
     // void button_interrupt(MPU6050 &sensor, int button_gpio);
-
+    void setAddress(int address);
+    int getAddress();
+    I2CBus getBus();
 private:
     int file;
     int address;
+    I2CBus bus;
     std::mutex mtx;
     std::atomic<bool> running;
     std::atomic<bool> active;

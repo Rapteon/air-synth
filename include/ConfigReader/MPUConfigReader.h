@@ -2,6 +2,7 @@
 #define MPUCONFIGREADER_H
 #include "ConfigReader/ConfigReader.h"
 #include "ConfigReader/MPUSchemaConfigReader.h"
+#include "Bus/I2CBus.h"
 #include "IMU/MPU6050.h"
 #include <unordered_set>
 
@@ -12,7 +13,7 @@ public:
   // Add methods required for configuring MPU.
   // MPU will read and configure itself accordingly.
 
-  void configure(const MPU6050 &mpu);
+  void configure(MPU6050 &mpu);
   json getConfig();
 
 private:
@@ -40,5 +41,8 @@ private:
   std::string setToString(const std::unordered_set<std::string> &set);
 
   void throwMissingKeyError(const std::string &key);
+
+  void configureAddress(const json &address, MPU6050 &mpu);
+  void configurePowerManagement(const json &power_management, MPU6050 &mpu);
 };
 #endif
