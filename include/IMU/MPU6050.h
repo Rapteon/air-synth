@@ -3,6 +3,7 @@
 
 #include "IMU/MPU6050.h"
 #include "Button/Button.h"
+#include "ControllerEvent/ControllerEvent.h"
 
 #include <iostream>
 #include <mutex>
@@ -68,7 +69,16 @@ public:
 
     // TODO replace content of this method within hasEvent() inherited method.
     // void button_interrupt(MPU6050 &sensor, int button_gpio);
+    struct ControllerCallbackInterface {
+        virtual void hasEvent(ControllerEvent &e) = 0;
+    };
 
+    /**
+     * Registers callback handlers which would be called
+     * upon movement of the sensor.
+     * Callback handler classes must implement the ControllerCallbackInterface.
+     */
+     void registerCallback(ControllerCallbackInterface *ci);
 private:
     int file;
     int address;
@@ -78,8 +88,15 @@ private:
     int counter_x, counter_y, counter_z;
     bool threshold_crossed_x, threshold_crossed_y, threshold_crossed_z;
     double z_offset;
+    std::vector<ControllerCallbackInterface *> registeredCallbacks;
 
     void calibrate_z_axis();
+
+    /**
+     * Notifies registered callbacks when a Controller event
+     * occurs.
+     */
+     void onEvent(ControllerEvent &event);
 };
 
 #endif

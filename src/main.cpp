@@ -1,5 +1,6 @@
 #include "IMU/MPU6050.h"
 #include "Button/Button.h"
+#include "Synth/Synth.h"
 #include <thread>
 
 #define BUTTON_GPIO1 20
@@ -13,7 +14,12 @@ int main()
     constexpr int MPU6050_ADDR1{0x68};
     constexpr int MPU6050_ADDR2{0x69};
 
+    MPUSynth leftSynth {};
+    leftSynth.start();
+
     MPU6050 leftSensor{MPU6050_ADDR1};
+    leftSensor.registerCallback(&leftSynth);
+    leftSynth.start();
     Button leftButton{};
     leftButton.registerCallback(&leftSensor);
     leftSensor.start();
@@ -34,5 +40,6 @@ int main()
     getchar();
     leftButton.stop();
     rightButton.stop();
+    leftSynth.stop();
     return 0;
 }

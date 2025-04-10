@@ -17,9 +17,8 @@ const std::map<ScaleType, std::vector<int>> SCALE_INTERVALS = {
     {ScaleType::CHROMATIC, {0, 1, 2, 3, 4, 5, 6, 7}}
 };
 
-MPUSynth::MPUSynth(MPU6050* mpuSensor, int sampleRate)
-    : mpuSensor(mpuSensor), 
-      sampleRate(sampleRate),
+MPUSynth::MPUSynth(int sampleRate)
+    : sampleRate(sampleRate),
       volume(0.5f),
       noteDuration(250.0f), // 250ms default note duration
       noteActive(false),
@@ -263,19 +262,34 @@ void MPUSynth::processSample(float* buffer, unsigned int nBufferFrames) {
 void MPUSynth::processMpuData() {
     while (running) {
         // Process only if sensor is active
-        if (mpuSensor != nullptr) {
-            // Read accelerometer values
-            double accelX = (mpuSensor->read_word(ACCEL_XOUT_H) / ACCEL_SCALE) * G;
-            double accelY = (mpuSensor->read_word(ACCEL_YOUT_H) / ACCEL_SCALE) * G;
-            double accelZ = (mpuSensor->read_word(ACCEL_ZOUT_H) / ACCEL_SCALE) * G;
+        // if (mpuSensor != nullptr) {
+        //     // Read accelerometer values
+        //     double accelX = (mpuSensor->read_word(ACCEL_XOUT_H) / ACCEL_SCALE) * G;
+        //     double accelY = (mpuSensor->read_word(ACCEL_YOUT_H) / ACCEL_SCALE) * G;
+        //     double accelZ = (mpuSensor->read_word(ACCEL_ZOUT_H) / ACCEL_SCALE) * G;
             
-            // Map acceleration to notes
-            mapAccelerationToNotes(accelX, accelY, accelZ);
+        //     // Map acceleration to notes
+        //     mapAccelerationToNotes(accelX, accelY, accelZ);
             
-            // Store current acceleration values for next iteration
-            prevAcceleration[0] = accelX;
-            prevAcceleration[1] = accelY;
-            prevAcceleration[2] = accelZ;
+        //     // Store current acceleration values for next iteration
+        //     prevAcceleration[0] = accelX;
+        //     prevAcceleration[1] = accelY;
+        //     prevAcceleration[2] = accelZ;
+        // }
+        if (!eventQueue.empty()) {
+            ControllerEvent e = eventQueue.front();
+            double x = e.getX();
+            double y = e.getY();
+            double z = e.getZ();
+
+            mapAccelerationToNotes(x, y, z);
+
+            prevAcceleration[0] = x;
+            prevAcceleration[1] = y;
+            prevAcceleration[2] = z;
+
+            // Remove processed event.
+            eventQueue.pop();
         }
         
         // Sleep to avoid CPU overuse

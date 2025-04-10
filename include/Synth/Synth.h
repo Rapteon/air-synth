@@ -3,6 +3,7 @@
 
 #include "IMU/MPU6050.h"
 #include "Button/Button.h"
+#include <queue>
 #include <vector>
 #include <array>
 #include <string>
@@ -28,6 +29,7 @@
 #define ACCEL_XOUT_H 0x3B
 #define ACCEL_YOUT_H 0x3D
 #define ACCEL_ZOUT_H 0x3F
+#include <queue>
 
 // Scale type definitions
 enum class ScaleType {
@@ -47,9 +49,9 @@ enum class InstrumentType {
     CLARINET
 };
 
-class MPUSynth {
+class MPUSynth: public MPU6050::ControllerCallbackInterface {
 public:
-    MPUSynth(MPU6050* mpuSensor, int sampleRate = 44100);
+    MPUSynth(int sampleRate = 44100);
     ~MPUSynth();
 
     // Start and stop audio processing
@@ -67,6 +69,10 @@ public:
     void setAxisNoteSpreads(int xSpread, int ySpread, int zSpread);
     void setAxisVelocitySensitivity(float xSens, float ySens, float zSens);
 
+    virtual void hasEvent(ControllerEvent &e) {
+        // TODO do something here based on x, y and z values sent by controller.
+        // Append the event to the queue.
+    }
 private:
     // Note generation
     void generateNotes(const std::string& rootNote, ScaleType scaleType);
@@ -113,6 +119,7 @@ private:
     std::atomic<bool> running;
     std::thread sensorThread;
     std::mutex instrumentMutex;
+    std::queue<ControllerEvent> eventQueue;
 };
 
 #endif // MPU_SYNTH_H
