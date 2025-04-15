@@ -40,12 +40,12 @@ public:
     void start(int pinNo, int chipNo = 0, PullResistor pullResistor = NO_PULL);
 
     void stop();
-	
+
 private:
     void gpioEvent(gpiod_line_event& event);
 
     void worker();
-
+	
     gpiod_chip* chipGPIO = nullptr;
     gpiod_line* pinGPIO = nullptr;
 

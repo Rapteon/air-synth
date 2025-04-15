@@ -42,8 +42,7 @@ void GPIOPin::start(int pinNo, int chipNo, PullResistor pullResistor) {
 #endif
         throw "Could not request event for IRQ.";
     }
-
-    running = true;
+	   running = true;
 
     thr = std::thread(&GPIOPin::worker, this);
 }
