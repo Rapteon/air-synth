@@ -55,7 +55,6 @@ private:
 
     gpiod_chip *chip = nullptr;
     gpiod_line *line = nullptr;
-    // gpiod_line_request_config LINE_CONFIG{"button_monitor", GPIOD_LINE_REQUEST_EVENT_FALLING_EDGE, GPIOD_LINE_REQUEST_FLAG_BIAS_PULL_UP};
     gpiod_line_request_config LINE_CONFIG{"button_monitor", GPIOD_LINE_REQUEST_EVENT_RISING_EDGE, GPIOD_LINE_REQUEST_FLAG_BIAS_PULL_UP};
 
     // thread
