@@ -26,7 +26,6 @@ void Button::start(const char *chipName, int offset)
         throw "GPIO line error.\n";
     }
 
-    // int result = gpiod_line_request(line, &LINE_CONFIG, 0);
     int result = gpiod_line_request_both_edges_events(line, "Consumer");
     if (result < 0)
     {
@@ -63,10 +62,10 @@ void Button::worker()
         switch (result)
         {
         case -1:
-            // TODO: Handle error condition
+            fprintf(stderr, "GPIOD error occurred while waiting for event.\n");
             break;
         case 0:
-            // TODO: Handle timeout condition
+            fprintf(stderr, "Timed out while waiting for GPIOD event.\n");
             break;
         case 1:
             fprintf(stderr, "GPIO Event case arm.\n");
