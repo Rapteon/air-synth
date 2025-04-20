@@ -11,5 +11,12 @@ in the **build** folder. If you want to use the default generator, run the comma
     ```
     cmake --build ./build --config Release --target AirSynth
     ```
+## Running the code
+The sensors and the buttons must be connected to the Raspberry Pi before running the program.  
+Please see the [hardware section on the Wiki home page](https://github.com/Rapteon/air-synth/wiki#hardware)
+for the circuit diagram.
 
-For more information, see [the Wiki](https://github.com/Rapteon/air-synth/wiki)
+## Additional information
+
+To know more about the idea, see [About](https://github.com/Rapteon/air-synth/wiki/About).  
+[Link to Wiki](https://github.com/Rapteon/air-synth/wiki)
