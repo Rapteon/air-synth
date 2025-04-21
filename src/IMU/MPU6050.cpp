@@ -1,5 +1,6 @@
 #include "IMU/MPU6050.h"
 #include "Button/Button.h"
+#include "ControllerEvent/ControllerEvent.h"
 
 #include <fcntl.h>
 #include <sys/ioctl.h>
@@ -97,8 +98,10 @@ void MPU6050::worker()
                 threshold_crossed_z = false;
 
             std::cerr << "[MPU " << address << "] Counter_X = " << counter_x << " || Counter_Y = " << counter_y << " || Counter_Z = " << counter_z << std::endl;
+            ControllerEvent ce {ax, ay, az};
+            onEvent(ce);
         }
-        // this_thread::sleep_for(chrono::milliseconds(100));
+        std::this_thread::sleep_for(std::chrono::milliseconds(100));
     }
 }
 
@@ -130,3 +133,15 @@ void MPU6050::start()
 //     }
 //     gpiod_chip_close(chip);
 // }
+
+void MPU6050::onEvent(ControllerEvent &event)
+{
+    for (auto &cb : registeredCallbacks)
+    {
+        cb->hasEvent(event);
+    }
+}
+
+void MPU6050::registerCallback(ControllerCallbackInterface *ci) {
+    registeredCallbacks.push_back(ci);
+}

@@ -1,5 +1,5 @@
 #include "Synth.h"
-#include "mpu6050.h"
+#include "IMU/MPU6050.h"
 #include "ControllerEvent/ControllerEvent.h"
 #include <stdexcept>
 

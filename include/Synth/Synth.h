@@ -75,7 +75,7 @@ const std::map<std::string, InstrumentType> AVAILABLE_INSTRUMENTS = {
  * to musical notes and controlling the sound generation. It implements proper
  * resource management and thread synchronization.
  */
-class MPUSynth {
+class MPUSynth: public MPU6050::ControllerCallbackInterface {
 private:
     MPU6050* mpuSensor;         ///< Reference to the MPU6050 sensor
     const int sampleRate;        ///< Audio sample rate
@@ -160,6 +160,11 @@ public:
     MPUSynth(const MPUSynth&) = delete;
     MPUSynth& operator=(const MPUSynth&) = delete;
     
+    virtual void hasEvent(ControllerEvent &e) override {
+        // TODO do something here based on x, y and z values sent by controller.
+        // Append the event to the queue.
+    }
+
     /**
      * @brief Starts the synthesizer.
      * @throws std::runtime_error if audio initialization fails
