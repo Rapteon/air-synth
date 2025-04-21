@@ -43,5 +43,7 @@ int main() {
   leftSensor.start();
   leftPrinter.start();
 
+  leftPrinter.stop();
+  leftButton.stop();
   return EXIT_SUCCESS;
 }
