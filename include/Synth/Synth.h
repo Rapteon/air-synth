@@ -17,6 +17,7 @@
 #include <stk/Moog.h>
 #include <stk/Clarinet.h>
 #include <stk/Stk.h>
+#include "IMU/MPU6050.h"
 
 // Forward declarations
 class MPU6050;
