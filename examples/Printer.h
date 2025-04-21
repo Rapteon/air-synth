@@ -6,7 +6,7 @@
 class Printer : public MPU6050::ControllerCallbackInterface {
 public:
   virtual void hasEvent(ControllerEvent &e) override {
-    std::cerr << "x-acceleration: " << e.getX()
+    std::cerr << "Name: " << name << ";x-acceleration: " << e.getX()
               << ";y-acceleration: " << e.getY()
               << ";z-acceleration: " << e.getZ() << '\n';
   }
