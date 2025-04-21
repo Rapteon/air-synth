@@ -1,6 +1,8 @@
 #include "Button/Button.h"
-#include <iostream>
 #include <thread>
+#include <stdexcept>
+#include <cstring>
+#include <errno.h>
 
 Button::~Button()
 {
@@ -17,19 +19,29 @@ void Button::start(const char *chipName, int offset)
     chip = gpiod_chip_open_by_name(chipName);
     if (NULL == chip)
     {
-        throw "GPIO chip error.\n";
+        std::string errorMsg = "GPIO chip error: ";
+        errorMsg += std::strerror(errno);
+        throw std::runtime_error(errorMsg);
     }
 
     line = gpiod_chip_get_line(chip, offset);
     if (NULL == line)
     {
-        throw "GPIO line error.\n";
+        std::string errorMsg = "GPIO line error: ";
+        errorMsg += std::strerror(errno);
+        gpiod_chip_close(chip);
+        throw std::runtime_error(errorMsg);
     }
 
     int result = gpiod_line_request_both_edges_events(line, "Consumer");
     if (result < 0)
     {
-        throw "Could not request line for IRQ.";
+        std::string errorMsg = "Could not request line for IRQ: ";
+        errorMsg += std::strerror(errno);
+        errorMsg += ". This may be due to insufficient permissions. Try running with sudo.";
+        gpiod_line_release(line);
+        gpiod_chip_close(chip);
+        throw std::runtime_error(errorMsg);
     }
     running = true;
 

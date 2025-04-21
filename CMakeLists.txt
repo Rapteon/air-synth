@@ -37,6 +37,7 @@ target_include_directories(IMU PRIVATE include/IMU)
 target_link_libraries(IMU gpiod)
 target_link_libraries(IMU Button)
 target_link_libraries(IMU ControllerEvent)
+target_link_libraries(IMU Synth)
 
 include_directories(AirSynth include)
 target_link_libraries(AirSynth gpiod)

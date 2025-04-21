@@ -103,11 +103,14 @@ void MPUSynth::start() {
 }
 
 void MPUSynth::stop() {
+    std::cout << "Stopping MPUSynth..." << std::endl;
+    
     // Stop sensor thread
     if (running) {
         running = false;
         if (sensorThread.joinable()) {
             sensorThread.join();
+            std::cout << "Sensor thread joined" << std::endl;
         }
     }
     
@@ -115,6 +118,7 @@ void MPUSynth::stop() {
     if (dac.isStreamOpen()) {
         try {
             dac.stopStream();
+            std::cout << "Audio stream stopped" << std::endl;
         }
         catch (const RtAudioError& e) {
             std::cerr << "RtAudio error: " << e.getMessage() << std::endl;
@@ -122,7 +126,15 @@ void MPUSynth::stop() {
         
         if (dac.isStreamOpen()) {
             dac.closeStream();
+            std::cout << "Audio stream closed" << std::endl;
         }
+    }
+    
+    // Turn off any active note
+    if (instrument) {
+        std::lock_guard<std::mutex> lock(instrumentMutex);
+        instrument->noteOff(0.5);
+        std::cout << "Active note turned off" << std::endl;
     }
     
     std::cout << "MPUSynth stopped" << std::endl;
@@ -337,6 +349,7 @@ void MPUSynth::addEvent(const ControllerEvent& event) {
 void MPUSynth::processMpuData() {
     constexpr int MAX_QUEUE_SIZE = 5;
     
+    std::cout << "MPUSynth sensor processing thread started" << std::endl;
     while (running.load()) {
         {
             std::lock_guard<std::mutex> lock(queueMutex);
@@ -365,6 +378,8 @@ void MPUSynth::processMpuData() {
         
         std::this_thread::sleep_for(std::chrono::milliseconds(10));
     }
+    
+    std::cout << "MPUSynth sensor processing thread stopped" << std::endl;
 }
 
 void MPUSynth::mapAccelerationToNotes(double x, double y, double z) {
@@ -415,9 +430,9 @@ void MPUSynth::mapAccelerationToNotes(double x, double y, double z) {
     }
     
     // Determine which axis had the strongest motion
-    double maxMotion = std::max({absX * axisVelocitySensitivity[0], 
-                                absY * axisVelocitySensitivity[1],
-                                absZ * axisVelocitySensitivity[2]});
+    double maxMotion = std::max(std::max(absX * axisVelocitySensitivity[0], 
+                                        absY * axisVelocitySensitivity[1]),
+                               absZ * axisVelocitySensitivity[2]);
     
     // Select note index based on the dominant axis
     int selectedIndex = 0;

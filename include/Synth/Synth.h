@@ -1,7 +1,6 @@
 #ifndef SYNTH_H
 #define SYNTH_H
 
-#include <iostream>
 #include <vector>
 #include <map>
 #include <string>
@@ -162,8 +161,8 @@ public:
     MPUSynth& operator=(const MPUSynth&) = delete;
     
     virtual void hasEvent(ControllerEvent &e) override {
-        // TODO do something here based on x, y and z values sent by controller.
-        // Append the event to the queue.
+        // Add the event to the processing queue
+        addEvent(e);
     }
 
     /**
