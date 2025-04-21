@@ -30,8 +30,8 @@ int main()
     // std::thread t2 (rightSensor.button_interrupt, ref(rightSensor), BUTTON_GPIO2).detach();
 
     // while (true) std::this_thread::sleep_for(std::chrono::milliseconds(1000));
-    fprintf(stdout, "Press any key to stop\n");
-    getchar();
+    //fprintf(stdout, "Press any key to stop\n");
+    //getchar();
     leftButton.stop();
     rightButton.stop();
     return 0;
