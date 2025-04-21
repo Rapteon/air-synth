@@ -44,3 +44,8 @@ target_link_libraries(AirSynth gpiod)
 target_link_libraries(AirSynth IMU)
 target_link_libraries(AirSynth Button)
 
+
+add_executable(Printer examples/Printer.cpp)
+target_link_libraries(Printer gpiod)
+target_link_libraries(Printer IMU)
+target_link_libraries(Printer Button)
