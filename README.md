@@ -1,6 +1,7 @@
 # Air Synth
 
 Gesture-based music synthesizer.
+Checkout the [Website](https://rapteon.github.io/air-synth/) for more details!!
 
 ## Build instructions
 1. Clone the repository and navigate to it in a terminal.
